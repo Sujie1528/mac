@@ -49,18 +49,19 @@ class NullMacExponentialBackoff(station.Station):
         while True:
             # Block until there is a packet ready to send
             self.wait_for_next_transmission()
-            for i in range(0, 3):
+            for i in range(1, 4):
                 self.send('DATA')
-                
-                recv = self.recieve()
-                if recv == None:
-                    time.sleep(random.randint(0, (2**(i+1))-1) * self.interval)
-                elif recv == 'ACK':
+                backoff = random.randint(0, 2**i-1) * self.interval
+                recv = self.receive()
+                if recv == 'ACK':
                     break
+                else:
+                    time.sleep(backoff)
                     
 
 
 class CSMA_CA(station.Station):
+    
     '''
     `CSMA_CA` should implement Carrier Sense Multiple Access with Collision
     Avoidance. The node should only transmit data after sensing the channel is
@@ -76,14 +77,18 @@ class CSMA_CA(station.Station):
             self.wait_for_next_transmission()
 
             # Implement CSMA/CA here.
-            for i in range(0, 3):
+            while True:
+                i=1
+                backoff = random.randint(0, 2**i-1) * self.interval
                 if self.sense():
-                    time.sleep(random.randint(0, (2**(i+1))-1) * self.interval)
+                    continue
                 else:
                     self.send('DATA')
-                
-                    recv = self.recieve()
-                    if recv == 'ACK':
+                    recv = self.receive()
+                    if recv != 'ACK':
+                        i+=1
+                        time.sleep(backoff)
+                    else:
                         break
 
 
@@ -104,16 +109,29 @@ class RTS_CTS(station.Station):
             self.wait_for_next_transmission()
 
             # Implement CSMA/CA + RTS/CTS here.
-            for i in range(0,3):
-                if self.sense():
-                    time.sleep(random.randint(0, (2**(i+1))-1) * self.interval)
-                else:
-                    self.send('RTS')
-                
-                    recv = self.recieve()
-                    if recv == 'CTS':
-                        self.send('DATA')
-                        
-                        new_recv = self.recieve()
-                        if new_recv == 'ACK':
-                            break
+            while self.sense():
+                continue
+            
+            self.send('RTS')
+            recv = self.receive()
+            if recv == 'CTS':
+                i=1
+                while True:
+                    backoff = random.randint(0, 2**i-1) * self.interval
+                    recv = self.receive()
+                    if recv != 'ACK':
+                        i+=1
+                        time.sleep(backoff)
+                    else:
+                        break
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
